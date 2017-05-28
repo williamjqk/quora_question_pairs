@@ -9,7 +9,7 @@ import xgboost as xgb
 from nltk.corpus import stopwords
 from collections import Counter
 from sklearn.metrics import log_loss
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 
 from xgboost import XGBClassifier
 
@@ -51,7 +51,7 @@ def wc_diff(row):
     return abs(len(row['question1']) - len(row['question2']))
 
 def wc_ratio(row):
-    l1 = len(row['question1'])*1.0 
+    l1 = len(row['question1'])*1.0
     l2 = len(row['question2'])
     if l2 == 0:
         return np.nan
@@ -77,7 +77,7 @@ def wc_diff_unique_stop(row, stops=None):
     return abs(len([x for x in set(row['question1']) if x not in stops]) - len([x for x in set(row['question2']) if x not in stops]))
 
 def wc_ratio_unique_stop(row, stops=None):
-    l1 = len([x for x in set(row['question1']) if x not in stops])*1.0 
+    l1 = len([x for x in set(row['question1']) if x not in stops])*1.0
     l2 = len([x for x in set(row['question2']) if x not in stops])
     if l2 == 0:
         return np.nan
@@ -95,7 +95,7 @@ def char_diff(row):
     return abs(len(''.join(row['question1'])) - len(''.join(row['question2'])))
 
 def char_ratio(row):
-    l1 = len(''.join(row['question1'])) 
+    l1 = len(''.join(row['question1']))
     l2 = len(''.join(row['question2']))
     if l2 == 0:
         return np.nan
@@ -113,7 +113,7 @@ def get_weight(count, eps=10000, min_count=2):
         return 0
     else:
         return 1 / (count + eps)
-    
+
 def tfidf_word_match_share_stops(row, stops=None, weights=None):
     q1words = {}
     q2words = {}
@@ -126,10 +126,10 @@ def tfidf_word_match_share_stops(row, stops=None, weights=None):
     if len(q1words) == 0 or len(q2words) == 0:
         # The computer-generated chaff includes a few questions that are nothing but stopwords
         return 0
-    
+
     shared_weights = [weights.get(w, 0) for w in q1words.keys() if w in q2words] + [weights.get(w, 0) for w in q2words.keys() if w in q1words]
     total_weights = [weights.get(w, 0) for w in q1words] + [weights.get(w, 0) for w in q2words]
-    
+
     R = np.sum(shared_weights) / np.sum(total_weights)
     return R
 
@@ -143,10 +143,10 @@ def tfidf_word_match_share(row, weights=None):
     if len(q1words) == 0 or len(q2words) == 0:
         # The computer-generated chaff includes a few questions that are nothing but stopwords
         return 0
-    
+
     shared_weights = [weights.get(w, 0) for w in q1words.keys() if w in q2words] + [weights.get(w, 0) for w in q2words.keys() if w in q1words]
     total_weights = [weights.get(w, 0) for w in q1words] + [weights.get(w, 0) for w in q2words]
-    
+
     R = np.sum(shared_weights) / np.sum(total_weights)
     return R
 
@@ -168,15 +168,15 @@ def build_features(data, stops, weights):
     X['wc_diff_unique'] = data.apply(wc_diff_unique, axis=1, raw=True) #7
     X['wc_ratio_unique'] = data.apply(wc_ratio_unique, axis=1, raw=True) #8
 
-    f = functools.partial(wc_diff_unique_stop, stops=stops)    
+    f = functools.partial(wc_diff_unique_stop, stops=stops)
     X['wc_diff_unq_stop'] = data.apply(f, axis=1, raw=True) #9
-    f = functools.partial(wc_ratio_unique_stop, stops=stops)    
+    f = functools.partial(wc_ratio_unique_stop, stops=stops)
     X['wc_ratio_unique_stop'] = data.apply(f, axis=1, raw=True) #10
 
     X['same_start'] = data.apply(same_start_word, axis=1, raw=True) #11
     X['char_diff'] = data.apply(char_diff, axis=1, raw=True) #12
 
-    f = functools.partial(char_diff_unique_stop, stops=stops) 
+    f = functools.partial(char_diff_unique_stop, stops=stops)
     X['char_diff_unq_stop'] = data.apply(f, axis=1, raw=True) #13
 
 #     X['common_words'] = data.apply(common_words, axis=1, raw=True)  #14
@@ -184,8 +184,8 @@ def build_features(data, stops, weights):
 
     f = functools.partial(total_unq_words_stop, stops=stops)
     X['total_unq_words_stop'] = data.apply(f, axis=1, raw=True)  #16
-    
-    X['char_ratio'] = data.apply(char_ratio, axis=1, raw=True) #17    
+
+    X['char_ratio'] = data.apply(char_ratio, axis=1, raw=True) #17
 
     return X
 
@@ -214,10 +214,10 @@ def main():
 
     def q1_freq(row):
         return(len(q_dict[row['question1']]))
-        
+
     def q2_freq(row):
         return(len(q_dict[row['question2']]))
-        
+
     def q1_q2_intersect(row):
         return(len(set(q_dict[row['question1']]).intersection(set(q_dict[row['question2']]))))
 
@@ -293,13 +293,13 @@ def main():
     x_test_ab = df_test.iloc[:, 2:-1]
     x_test_ab = x_test_ab.drop('euclidean_distance', axis=1)
     x_test_ab = x_test_ab.drop('jaccard_distance', axis=1)
-    
+
     df_test = pd.read_csv('../data/test.csv')
     df_test = df_test.fillna(' ')
 
     df_test['question1'] = df_test['question1'].map(lambda x: str(x).lower().split())
     df_test['question2'] = df_test['question2'].map(lambda x: str(x).lower().split())
-    
+
     x_test = build_features(df_test, stops, weights)
     x_test = pd.concat((x_test, x_test_ab, test_leaky), axis=1)
     d_test = xgb.DMatrix(x_test)
@@ -309,8 +309,5 @@ def main():
     sub['is_duplicate'] = p_test
     sub.to_csv('../predictions/' + args.save + '.csv', index=False)
 
-
-
-
-
-
+if __name__ == '__main__':
+    main()
