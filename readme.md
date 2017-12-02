@@ -14,6 +14,8 @@
 - test_build_model_v0_2.py: 用Sequential自定义的layer的tensorboard test
 - test_build_model_v0_3.py: tensorboard测试, 清晰定义name_scope
 
+- XGB_handcrafted_leaky.py: kaggle上0.158得分的XGB程序
+
 ## input
 数据
 
